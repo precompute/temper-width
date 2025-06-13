@@ -84,9 +84,9 @@ When ALL is non-nil, unquish all frames."
     ;; (remove-hook 'window-size-change-functions #'squish-content t)
     (squish-content--unsquish-all t)))
 
-;; [25-06-14 03:03:20] window-size-change-functions seems to call itself far too often, even when
-;; scrolling!  That defeats the purpose of this package.  Maybe there’s list of functions that
-;; are only invoked when the dimensions of a window are changed.
+;; [25-06-14 03:03:20] window-size-change-functions are called even during scrolling!  That
+;; defeats the purpose of this package.  Maybe there’s list of functions that are only invoked
+;; when the dimensions of a window are changed, and not during redisplay.
 ;;; Provide:
 (provide 'squish-content)
 
