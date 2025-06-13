@@ -60,17 +60,33 @@
   "Reset window margins for WINDOW."
   (set-window-margins window nil))
 
-(defun squish-content--unsquish-all ()
-  "Call `squish-content’ for all windows in current frame."
-  (walk-windows #'squish-content-unsquish))
+(defun squish-content--unsquish-all (&optional all)
+  "Call `squish-content’ for all windows in current frame.
+When ALL is non-nil, unquish all frames."
+  (walk-windows #'squish-content--unsquish nil all))
 
 (defun squish-window-split-window (&rest args)
-  "Unquishes all windows in current frame and calls `squish-content--split-function-backup’ with ARGS."
+  "Calls `squish-content--unsquish-all’ and then `squish-content--split-function-backup’ with ARGS."
   (squish-content--unsquish-all)
+  (funcall squish-content--split-function-backup args))
 
-  )
-;; Write a function that unsquishes all content in all visible windows in the current frame
-;; set split-window-preferred-function, one for split-window and another for split-window-sensibly.  Or perhaps copy it to a variable and restore it when the mode is turned off.
+;;;; Mode
+(define-minor-mode squish-content-mode
+  "Squish-Content modifies the margins to satisfy `squish-content-width’."
+  :init-value nil
+  :lighter "squish"
+  (if squish-content-mode
+      (progn (setq squish-content--split-function-backup split-window-preferred-function)
+             (setq split-window-preferred-function #'squish-window-split-window)
+             ;; (add-hook 'window-size-change-functions #'squish-content t)
+             )
+    (setq split-window-preferred-function squish-content--split-function-backup)
+    ;; (remove-hook 'window-size-change-functions #'squish-content t)
+    (squish-content--unsquish-all t)))
+
+;; [25-06-14 03:03:20] window-size-change-functions seems to call itself far too often, even when
+;; scrolling!  That defeats the purpose of this package.  Maybe there’s list of functions that
+;; are only invoked when the dimensions of a window are changed.
 ;;; Provide:
 (provide 'squish-content)
 
