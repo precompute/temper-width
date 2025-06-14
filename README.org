@@ -6,4 +6,6 @@ It calculates the width of a windows, and if it is larger than squish-content-wi
 
 This does make it a bit janky, but it doesn’t slow emacs down.
 
+Users can set functions they want =squish-content= to advice ~:around~ and ~:after~ in ~squish-content-advice-around-functions~ and ~squish-content-advice-after-functions~, respectively.
+
 NOTE: Adding advices can be somewhat unpredictable.  Try and stick to interactive, "top-level" functions.

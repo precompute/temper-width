@@ -6,7 +6,7 @@
 ;; URL: https://github.com/precompute/legit
 ;; Created: June 14, 2025
 ;; Modified: June 14, 2025
-;; Version: 0.1.0
+;; Version: 0.2.0
 ;; Package-Requires: ((emacs "29.1"))
 
 ;; This program is free software: you can redistribute it and/or modify
@@ -45,13 +45,19 @@
   :type 'integer
   :group 'squish-content)
 
-(defcustom squish-content-functions
-  '( split-window split-window-sensibly
-     windmove-left windmove-right windmove-up windmove-down
-     other-window
-     pop-to-buffer pop-to-buffer-same-window
-     toggle-frame-fullscreen)
-  "List of functions that are advised by `squish-content’.
+(defcustom squish-content-advice-around-functions
+  '(split-window split-window-sensibly)
+  "List of functions that are advised :around by `squish-content’.
+If modified, disable and re-enable `squish-content-mode’ to see changes."
+  :type 'sexp
+  :group 'squish-content)
+
+(defcustom squish-content-advice-after-functions
+  '( windmove-left windmove-right windmove-up windmove-down
+     find-file
+     other-window toggle-frame-fullscreen
+     delete-window delete-other-windows)
+  "List of functions that are advised :after by `squish-content’.
 If modified, disable and re-enable `squish-content-mode’ to see changes."
   :type 'sexp
   :group 'squish-content)
@@ -89,6 +95,11 @@ If modified, disable and re-enable `squish-content-mode’ to see changes."
 REST is ignored."
   (walk-windows #'squish-content--squish))
 
+(defun squish-content--squish-all--around (f &rest args)
+  "Same as `squish-content--squish-all’, but passes ARGS to function F."
+  (squish-content--unsquish-all)
+  (prog1 (apply f args) (squish-content--squish-all)))
+
 (defun squish-content--unsquish (window)
   "Reset window margins for WINDOW."
   (set-window-margins window nil))
@@ -98,21 +109,31 @@ REST is ignored."
 REST is ignored."
   (walk-windows #'squish-content--unsquish nil t))
 
-(defun squish-content--add-advice (f)
+(defun squish-content--add-around-advice (f)
+  "Add advice `squish-content--squish-all’ around function F."
+  (when (fboundp f) (advice-add f :around #'squish-content--squish-all--around)))
+
+(defun squish-content--add-after-advice (f)
   "Add advice `squish-content--squish-all’ after function F."
-  (advice-add f :after #'squish-content--squish-all))
+  (when (fboundp f) (advice-add f :after #'squish-content--squish-all)))
 
 (defun squish-content--remove-advice (f)
   "Remove advice `squish-content--squish-all’ from function F."
   (advice-remove f #'squish-content--squish-all))
 
+(defun squish-content--remove-advice--around (f)
+  "Remove advice `squish-content--squish-all--around’ from function F."
+  (advice-remove f #'squish-content--squish-all--around))
+
 (defun squish-content--enable ()
-  "Add advice after `squish-content-enable-for’."
-  (mapc #'squish-content--add-advice squish-content-functions))
+  "Add advice to `squish-content-enable-for’."
+  (mapc #'squish-content--add-around-advice squish-content-advice-around-functions)
+  (mapc #'squish-content--add-after-advice squish-content-advice-after-functions))
 
 (defun squish-content--disable ()
   "Remove advice from `squish-content-enable-for’."
-  (mapc #'squish-content--remove-advice squish-content-functions)
+  (mapc #'squish-content--remove-advice--around squish-content-advice-around-functions)
+  (mapc #'squish-content--remove-advice squish-content-advice-after-functions)
   (squish-content--unsquish-all t))
 
 ;;;; Mode
