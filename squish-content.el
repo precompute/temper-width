@@ -6,7 +6,7 @@
 ;; URL: https://github.com/precompute/legit
 ;; Created: June 14, 2025
 ;; Modified: June 14, 2025
-;; Version: 0.2.0
+;; Version: 0.2.1
 ;; Package-Requires: ((emacs "29.1"))
 
 ;; This program is free software: you can redistribute it and/or modify
@@ -46,7 +46,8 @@
   :group 'squish-content)
 
 (defcustom squish-content-advice-around-functions
-  '(split-window split-window-sensibly)
+  '( split-window split-window-sensibly
+     balance-windows)
   "List of functions that are advised :around by `squish-content’.
 If modified, disable and re-enable `squish-content-mode’ to see changes."
   :type 'sexp
@@ -104,10 +105,10 @@ REST is ignored."
   "Reset window margins for WINDOW."
   (set-window-margins window nil))
 
-(defun squish-content--unsquish-all (&rest rest)
+(defun squish-content--unsquish-all (&optional all)
   "Call `squish-content--squish’ for all windows in current frame.
-REST is ignored."
-  (walk-windows #'squish-content--unsquish nil t))
+When ALL is non-nil, unsquish all frames."
+  (walk-windows #'squish-content--unsquish nil all))
 
 (defun squish-content--add-around-advice (f)
   "Add advice `squish-content--squish-all’ around function F."
