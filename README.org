@@ -1,5 +1,9 @@
-This package reduces the width of the displayed content in a buffer.  It is similar to olivetti-mode and perfect-margin-mode, but lighter and lacks features.
+#+HTML: <img src="banner.webp" align="center">
 
- It calculates the width of a windows, and if it is larger than squish-content-width, adjusts the margins using set-window-margin for that specific window.  It associates itself with hooks that fire when a window is introduced, or when its dimensions are changed.
+This package reduces the width of the displayed content in a buffer. It is similar to olivetti-mode and perfect-margin-mode, but lighter and lacks features.
 
- [25-06-14 03:03:20] window-size-change-functions are called even during scrolling!  That defeats the purpose of this package.  Maybe there’s list of functions that are only invoked when the dimensions of a window are changed, and not during redisplay.  Abandoned until I figure out a way to only invoke squish-content on buffers with a certain major-mode whose dimensions have changed.
+It calculates the width of a windows, and if it is larger than squish-content-width, adjusts the margins using set-window-margin for that specific window.  It adds advice :after the functions in `squish-content-enable-for’.  We use advice instead of change-major-mode-hook, window-size-change-functions and others because advice runs once, while the others run far too often, and can slow emacs down.  Since this is a cosmetic visual change, it makes sense to only invoke it when the user does something to usefully change visual state.  AFAIK there is no *-hook or *-functions that fills this niche in emacs as of [25-06-14].
+
+This does make it a bit janky, but it doesn’t slow emacs down.
+
+NOTE: Adding advices can be somewhat unpredictable.  Try and stick to interactive, "top-level" functions.
