@@ -1,11 +1,25 @@
 #+HTML: <img src="banner.webp" align="center">
 
-This package reduces the width of the displayed content in a buffer. It is similar to olivetti-mode and perfect-margin-mode, but lighter and lacks features.
+This package reduces the width of displayed content.  It is similar to olivetti-mode and perfect-margin-mode, but lighter.  It runs as a global mode, but can be enabled/disabled on a per-file basis.
 
-It calculates the width of a windows, and if it is larger than squish-content-width, adjusts the margins using set-window-margin for that specific window.  It adds advice :after the functions in `squish-content-enable-for’.  We use advice instead of change-major-mode-hook, window-size-change-functions and others because advice runs once, while the others run far too often, and can slow emacs down.  Since this is a cosmetic visual change, it makes sense to only invoke it when the user does something to usefully change visual state.  AFAIK there is no *-hook or *-functions that fills this niche in emacs as of [25-06-14].
+If the total-width of a window is larger than ~temper-width-width~, its margins are modified to make body-width≈temper-width-width.
 
-This does make it a bit janky, but it doesn’t slow emacs down.
+The function ~temper-width~ is added to ~window-size-change-functions~.
 
-Users can set functions they want =squish-content= to advice ~:around~ and ~:after~ in ~squish-content-advice-around-functions~ and ~squish-content-advice-after-functions~, respectively.
+Set ~temper-width-enable-on-prog-derived~ to ~t~ to temper all windows derived from ~prog-mode.~
 
-NOTE: Adding advices can be somewhat unpredictable.  Try and stick to interactive, "top-level" functions.
+To temper all buffers with a certain major-mode, add it to ~temper-width-allowed-modes~.
+
+To force-enable temper-width for a certain buffer, set the variable ~temper-width-force-enable~ to ~t~.  Similarly, to force disable, set ~temper-width-force-disable~ to ~t~.
+
+Sample config:
+#+BEGIN_SRC elisp
+  (setq-default temper-width-width 120)
+  (setq temper-width-enable-on-prog-derived t)
+  (setq temper-width-allowed-modes '( text-mode dired-mode
+                                      magit-mode Info-mode
+                                      conf-colon-mode helpful-mode
+                                      shortdoc-mode))
+  (add-to-list 'temper-width-allowed-modes 'org-mode)
+  (temper-width-global-mode t)
+#+END_SRC
