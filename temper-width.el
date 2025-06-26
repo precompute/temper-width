@@ -5,8 +5,8 @@
 ;; Author: precompute <git@precompute.net>
 ;; URL: https://github.com/precompute/legit
 ;; Created: June 14, 2025
-;; Modified: June 26, 2025
-;; Version: 0.5.0
+;; Modified: June 27, 2025
+;; Version: 0.6.0
 ;; Package-Requires: ((emacs "29.1"))
 
 ;; This program is free software: you can redistribute it and/or modify
@@ -25,7 +25,7 @@
 ;;; Commentary:
 
 ;; This package reduces the width of displayed content.
-;; It is similar to olivetti-mode and perfect-margin-mode, but lighter.
+;; It is similar to olivetti-mode and perfect-margin-mode, but lighter (to my eyes).
 ;; It runs as a global mode, but can be enabled/disabled on a per-file basis.
 
 ;; If the total-width of a window is larger than `temper-width-width’, its margins are modified
@@ -61,6 +61,8 @@ Usage: (add-to-list 'temper-width-allowed-modes 'my-mode) "
 ;;;;; Internal
 (defvar-local temper-width-enabled nil
   "Non-nil when `temper-width’ is enabled in the current buffer.")
+(defvar-local temper-width-split-window-function nil
+  "Backup for `split-window-preferred-function’.")
 
 ;;;;; Other
 (defvar-local temper-width-force-enable nil
@@ -81,22 +83,40 @@ Usage: (add-to-list 'temper-width-allowed-modes 'my-mode) "
                (margin (/ (abs (- totalwidth userwidth)) 2)))
           (if (> (abs (- totalwidth userwidth)) 2)
               (if (> totalwidth userwidth)
-                  (progn (setq temper-width-enabled t)
-                         (set-window-margins window margin margin))
-                (setq temper-width-enabled nil)
-                (set-window-margins window 0 0))
+                  (temper-width--enable window margin)
+                (temper-width--disable window))
             (when (< bodywidth totalwidth)
-              (setq temper-width-enabled t)
-              (set-window-margins window margin margin))))
-      (when temper-width-force-disable
+              (temper-width--enable window margin))))
+      (when (and temper-width-enabled temper-width-force-disable)
         (temper-width--disable window)))))
+
+(defun temper-width--enable (window margin)
+  "Enable `temper-width’ in WINDOW with MARGIN."
+  (with-selected-window window
+    (setq temper-width-enabled t)
+    (set-window-parameter window 'split-window 'temper-width-split-window)
+    (unless (bound-and-true-p temper-width-split-window-function)
+      (setq temper-width-split-window-function split-window-preferred-function))
+    (setq-local split-window-preferred-function #'temper-width-split-window-2)
+    (set-window-margins window margin margin)))
 
 (defun temper-width--disable (window)
   "Disable `temper-width’ in WINDOW."
   (with-selected-window window
-    (when temper-width-enabled
-      (setq temper-width-enabled nil)
-      (set-window-margins window 0 0))))
+    (setq temper-width-enabled nil)
+    (when (eq (window-parameter window 'split-window) 'temper-width-split-window)
+      (set-window-parameter window 'split-window nil))
+    (set-window-margins window 0 0)))
+
+(defun temper-width-split-window (&optional window size side pixelwise)
+  "Reset WINDOW and call `split-window’ with WINDOW SIZE SIDE and PIXELWISE."
+  (walk-windows #'temper-width--disable)
+  (split-window window size side pixelwise))
+
+(defun temper-width-split-window-2 (&optional window)
+  "Reset WINDOW and call `temper-width-split-window-function’ with WINDOW."
+  (walk-windows #'temper-width--disable)
+  (funcall temper-width-split-window-function window))
 
 (defun temper-width (frame)
   "Invoke `temper-width--window’ for widows on FRAME."
@@ -109,6 +129,7 @@ Usage: (add-to-list 'temper-width-allowed-modes 'my-mode) "
 (defun temper-width-global-mode--disable ()
   "Disable `temper-width-global-mode’ globally."
   (remove-hook 'window-size-change-functions #'temper-width)
+  (setq split-window-preferred-function temper-width-split-window-function)
   (walk-windows #'temper-width--disable nil t))
 
 ;;;; Mode

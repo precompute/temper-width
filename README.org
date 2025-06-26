@@ -1,6 +1,6 @@
 #+HTML: <img src="banner.webp" align="center">
 
-This package reduces the width of displayed content.  It is similar to olivetti-mode and perfect-margin-mode, but lighter.  It runs as a global mode, but can be enabled/disabled on a per-file basis.
+This package reduces the width of displayed content.  It is similar to olivetti-mode and perfect-margin-mode, but lighter (to my eyes).  It runs as a global mode, but can be enabled/disabled on a per-file basis.
 
 If the total-width of a window is larger than ~temper-width-width~, its margins are modified to make body-width≈temper-width-width.
 
