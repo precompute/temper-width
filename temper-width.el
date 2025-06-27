@@ -6,7 +6,7 @@
 ;; URL: https://github.com/precompute/legit
 ;; Created: June 14, 2025
 ;; Modified: June 27, 2025
-;; Version: 0.7.0
+;; Version: 0.7.1
 ;; Package-Requires: ((emacs "29.1"))
 
 ;; This program is free software: you can redistribute it and/or modify
@@ -78,20 +78,21 @@ Usage: (add-to-list 'temper-width-allowed-modes 'my-mode)"
   (with-selected-window window
     (if (and temper-width-enabled temper-width-force-disable)
         (temper-width--disable window)
-      (if (and (or (memq major-mode temper-width-allowed-modes)
-                   (when temper-width-enable-on-prog-derived (derived-mode-p 'prog-mode))
-                   temper-width-force-enable)
-               (not temper-width-force-disable))
-          (let* ((totalwidth (window-total-width))
-                 (userwidth temper-width-width)
-                 (bodywidth (window-body-width))
-                 (margin (/ (abs (- totalwidth userwidth)) 2)))
-            (if (> (abs (- totalwidth userwidth)) 2)
-                (if (> totalwidth userwidth)
-                    (temper-width--enable window margin)
-                  (temper-width--disable window))
-              (when (< bodywidth totalwidth)
-                (temper-width--enable window margin))))))))
+      (when (and (or (memq major-mode temper-width-allowed-modes)
+                     (when temper-width-enable-on-prog-derived
+                       (derived-mode-p 'prog-mode))
+                     temper-width-force-enable)
+                 (not temper-width-force-disable))
+        (let* ((totalwidth (window-total-width))
+               (userwidth temper-width-width)
+               (bodywidth (window-body-width))
+               (margin (/ (abs (- totalwidth userwidth)) 2)))
+          (if (> (abs (- totalwidth userwidth)) 2)
+              (if (> totalwidth userwidth)
+                  (temper-width--enable window margin)
+                (temper-width--disable window))
+            (when (< bodywidth totalwidth)
+              (temper-width--enable window margin))))))))
 
 (defun temper-width--enable (window margin)
   "Enable `temper-width’ in WINDOW with MARGIN."
@@ -155,6 +156,7 @@ For permanent changes, use file/directory variables, or add a mode to
   "Disable `temper-width-global-mode’ globally."
   (remove-hook 'window-size-change-functions #'temper-width)
   (setq split-window-preferred-function temper-width-split-window-function)
+  (setq temper-width-split-window-function nil)
   (walk-windows #'temper-width--disable nil t))
 
 ;;;; Mode
