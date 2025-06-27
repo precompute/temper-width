@@ -6,7 +6,7 @@
 ;; URL: https://github.com/precompute/legit
 ;; Created: June 14, 2025
 ;; Modified: June 27, 2025
-;; Version: 0.6.0
+;; Version: 0.7.0
 ;; Package-Requires: ((emacs "29.1"))
 
 ;; This program is free software: you can redistribute it and/or modify
@@ -41,6 +41,8 @@
 ;; To force-enable temper-width for a certain buffer, set the variable
 ;; `temper-width-force-enable’ to `t’.  Similarly, to force disable, set
 ;; `temper-width-force-disable’ to `t’.
+;; Helper functions `temper-width-force-enable-locally’ and `temper-width-force-disable-locally’
+;; are provided.  Call them with a prefix argument to disable their effect.
 
 ;;; Code:
 ;;;; Variables
@@ -51,11 +53,11 @@
 
 (defcustom temper-width-enable-on-prog-derived nil
   "Whether `temper-width’ should be enabled on `prog-mode’ derived major-modes."
-  :type 'bool :group 'temper-width)
+  :type 'boolean :group 'temper-width)
 
 (defcustom temper-width-allowed-modes nil
   "List of modes `temper-width’ should be enabled for.
-Usage: (add-to-list 'temper-width-allowed-modes 'my-mode) "
+Usage: (add-to-list 'temper-width-allowed-modes 'my-mode)"
   :type 'sexp :group 'temper-width)
 
 ;;;;; Internal
@@ -74,21 +76,22 @@ Usage: (add-to-list 'temper-width-allowed-modes 'my-mode) "
 (defun temper-width--window (window)
   "Temper the width of the content of the window WINDOW."
   (with-selected-window window
-    (if (or (memq major-mode temper-width-allowed-modes)
-            (when temper-width-enable-on-prog-derived (derived-mode-p 'prog-mode))
-            temper-width-force-enable)
-        (let* ((totalwidth (window-total-width))
-               (userwidth temper-width-width)
-               (bodywidth (window-body-width))
-               (margin (/ (abs (- totalwidth userwidth)) 2)))
-          (if (> (abs (- totalwidth userwidth)) 2)
-              (if (> totalwidth userwidth)
-                  (temper-width--enable window margin)
-                (temper-width--disable window))
-            (when (< bodywidth totalwidth)
-              (temper-width--enable window margin))))
-      (when (and temper-width-enabled temper-width-force-disable)
-        (temper-width--disable window)))))
+    (if (and temper-width-enabled temper-width-force-disable)
+        (temper-width--disable window)
+      (if (and (or (memq major-mode temper-width-allowed-modes)
+                   (when temper-width-enable-on-prog-derived (derived-mode-p 'prog-mode))
+                   temper-width-force-enable)
+               (not temper-width-force-disable))
+          (let* ((totalwidth (window-total-width))
+                 (userwidth temper-width-width)
+                 (bodywidth (window-body-width))
+                 (margin (/ (abs (- totalwidth userwidth)) 2)))
+            (if (> (abs (- totalwidth userwidth)) 2)
+                (if (> totalwidth userwidth)
+                    (temper-width--enable window margin)
+                  (temper-width--disable window))
+              (when (< bodywidth totalwidth)
+                (temper-width--enable window margin))))))))
 
 (defun temper-width--enable (window margin)
   "Enable `temper-width’ in WINDOW with MARGIN."
@@ -122,6 +125,28 @@ Usage: (add-to-list 'temper-width-allowed-modes 'my-mode) "
   "Invoke `temper-width--window’ for widows on FRAME."
   (with-selected-frame frame (walk-windows #'temper-width--window)))
 
+(defun temper-width-force-enable-locally (arg)
+  "Force-enable temper-width in this buffer.
+When ARG is non-nil, unset force-enable.
+This function makes changes buffer-locally.
+For permanent changes, use file/directory variables, or add a mode to
+`temper-width-allowed-modes’."
+  (interactive "P")
+  (if temper-width-global-mode
+      (setq temper-width-force-enable (if arg nil t))
+    (message "Please enable `temper-width-global-mode’ first.")))
+
+(defun temper-width-force-disable-locally (arg)
+  "Force-disable temper-width in this buffer.
+When ARG is non-nil, unset force-disable.
+This function makes changes buffer-locally.
+For permanent changes, use file/directory variables, or add a mode to
+`temper-width-allowed-modes’."
+  (interactive "P")
+  (if temper-width-global-mode
+      (setq temper-width-force-disable (if arg nil t))
+    (message "Please enable `temper-width-global-mode’ first.")))
+
 (defun temper-width-global-mode--enable ()
   "Enable `temper-width-global-mode’ globally."
   (add-hook 'window-size-change-functions #'temper-width))
@@ -136,7 +161,7 @@ Usage: (add-to-list 'temper-width-allowed-modes 'my-mode) "
 (define-minor-mode temper-width-global-mode
   "Temper-Width tempers content to a readable width."
   :init-value nil
-  :lighter "tmpr"
+  :lighter " tmpr"
   :global t
   (if temper-width-global-mode
       (temper-width-global-mode--enable)

@@ -12,6 +12,8 @@ To temper all buffers with a certain major-mode, add it to ~temper-width-allowed
 
 To force-enable temper-width for a certain buffer, set the variable ~temper-width-force-enable~ to ~t~.  Similarly, to force disable, set ~temper-width-force-disable~ to ~t~.
 
+Helper functions ~temper-width-force-enable-locally~ and  ~temper-width-force-disable-locally~ are provided.  Call them with a prefix argument to disable their effect.
+
 Sample config:
 #+BEGIN_SRC elisp
   (setq-default temper-width-width 120)
