@@ -5,8 +5,8 @@
 ;; Author: precompute <git@precompute.net>
 ;; URL: https://github.com/precompute/legit
 ;; Created: June 14, 2025
-;; Modified: June 27, 2025
-;; Version: 0.7.1
+;; Modified: August 15, 2025
+;; Version: 0.8.0
 ;; Package-Requires: ((emacs "29.1"))
 
 ;; This program is free software: you can redistribute it and/or modify
@@ -44,6 +44,12 @@
 ;; Helper functions `temper-width-force-enable-locally’ and `temper-width-force-disable-locally’
 ;; are provided.  Call them with a prefix argument to disable their effect.
 
+;; To /only/ enable temper-width on specific buffers and nowhere else, enable
+;; `temper-width-blind-global-mode', then call `temper-width-force-enable-locally' (or set
+;; `temper-width-force-enable' to `t').
+
+;; `temper-width-global-mode' and `temper-width-blind-global-mode' are mutually exclusive.
+
 ;;; Code:
 ;;;; Variables
 ;;;;; Customizable
@@ -73,16 +79,19 @@ Usage: (add-to-list 'temper-width-allowed-modes 'my-mode)"
   "When non-nil, `temper-width’ is force-disabled in this buffer.")
 
 ;;;; Functions
-(defun temper-width--window (window)
-  "Temper the width of the content of the window WINDOW."
+(defun temper-width--window (window &optional blind?)
+  "Temper the width of the content of the window WINDOW.
+When BLIND? is t, don't check allowed modes or prog-derived modes."
   (with-selected-window window
-    (if (and temper-width-enabled temper-width-force-disable)
+    (if (and temper-width-enabled temper-width-force-disable
+             (not blind?))
         (temper-width--disable window)
-      (when (and (or (memq major-mode temper-width-allowed-modes)
-                     (when temper-width-enable-on-prog-derived
-                       (derived-mode-p 'prog-mode))
-                     temper-width-force-enable)
-                 (not temper-width-force-disable))
+      (when (if blind? temper-width-force-enable
+              (and (or (memq major-mode temper-width-allowed-modes)
+                       (when temper-width-enable-on-prog-derived
+                         (derived-mode-p 'prog-mode))
+                       temper-width-force-enable)
+                   (not temper-width-force-disable)))
         (let* ((totalwidth (window-total-width))
                (userwidth temper-width-width)
                (bodywidth (window-body-width))
@@ -133,9 +142,9 @@ This function makes changes buffer-locally.
 For permanent changes, use file/directory variables, or add a mode to
 `temper-width-allowed-modes’."
   (interactive "P")
-  (if temper-width-global-mode
+  (if (or temper-width-global-mode temper-width-blind-global-mode)
       (setq temper-width-force-enable (if arg nil t))
-    (message "Please enable `temper-width-global-mode’ first.")))
+    (message "Please enable `temper-width-global-mode’ or `temper-width-blind-global-mode’ first.")))
 
 (defun temper-width-force-disable-locally (arg)
   "Force-disable temper-width in this buffer.
@@ -144,9 +153,9 @@ This function makes changes buffer-locally.
 For permanent changes, use file/directory variables, or add a mode to
 `temper-width-allowed-modes’."
   (interactive "P")
-  (if temper-width-global-mode
+  (if (or temper-width-global-mode temper-width-blind-global-mode)
       (setq temper-width-force-disable (if arg nil t))
-    (message "Please enable `temper-width-global-mode’ first.")))
+    (message "Please enable `temper-width-global-mode’ or `temper-width-blind-global-mode’ first.")))
 
 (defun temper-width-global-mode--enable ()
   "Enable `temper-width-global-mode’ globally."
@@ -159,12 +168,41 @@ For permanent changes, use file/directory variables, or add a mode to
   (setq temper-width-split-window-function nil)
   (walk-windows #'temper-width--disable nil t))
 
+(defun temper-width-blind (frame)
+  "Invoke `temper-width--window’ for windows on FRAME, with BLIND set to true."
+  (with-selected-frame frame
+    (walk-windows (lambda (w) (temper-width--window w t)))))
+
+(defun temper-width-blind-global-mode--enable ()
+  "Enable `temper-width-blind-global-mode’ globally."
+  (add-hook 'window-size-change-functions #'temper-width-blind))
+
+(defun temper-width-blind-global-mode--disable ()
+  "Disable `temper-width-blind-global-mode’ globally."
+  (remove-hook 'window-size-change-functions #'temper-width-blind)
+  (setq split-window-preferred-function temper-width-split-window-function)
+  (setq temper-width-split-window-function nil)
+  (walk-windows #'temper-width--disable nil t))
+
 ;;;; Mode
+(define-minor-mode temper-width-blind-global-mode
+  "Temper-Width-Blind tempers content in specific buffers to a readable width."
+  :init-value nil
+  :lighter " tmprbl"
+  :global t
+  (when temper-width-global-mode
+    (temper-width-global-mode -1))
+  (if temper-width-blind-global-mode
+      (temper-width-blind-global-mode--enable)
+    (temper-width-blind-global-mode--disable)))
+
 (define-minor-mode temper-width-global-mode
   "Temper-Width tempers content to a readable width."
   :init-value nil
   :lighter " tmpr"
   :global t
+  (when temper-width-blind-global-mode
+    (temper-width-blind-global-mode -1))
   (if temper-width-global-mode
       (temper-width-global-mode--enable)
     (temper-width-global-mode--disable)))
@@ -172,4 +210,7 @@ For permanent changes, use file/directory variables, or add a mode to
 ;;; Provide:
 (provide 'temper-width)
 
+;;;; TODO
+;;;; - Add something that fixes things when the size of the frame changes, especially when maximizing it.
+;;;; - Alternative mode that allows adjusting margins to keep window as close to the center as possible.
 ;;; temper-width.el ends here

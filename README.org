@@ -14,6 +14,10 @@ To force-enable temper-width for a certain buffer, set the variable ~temper-widt
 
 Helper functions ~temper-width-force-enable-locally~ and  ~temper-width-force-disable-locally~ are provided.  Call them with a prefix argument to disable their effect.
 
+To /only/ enable temper-width on specific buffers and nowhere else, enable `temper-width-blind-global-mode', then call `temper-width-force-enable-locally' (or set `temper-width-force-enable' to `t').
+
+`temper-width-global-mode' and `temper-width-blind-global-mode' are mutually exclusive.
+
 Sample config:
 #+BEGIN_SRC elisp
   (setq-default temper-width-width 120)
