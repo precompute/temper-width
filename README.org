@@ -1,6 +1,6 @@
 #+HTML: <img src="banner.webp" align="center">
 
-This package reduces the width of displayed content.  It is similar to olivetti-mode and perfect-margin-mode, but lighter (to my eyes).  It runs as a global mode, but can be enabled/disabled on a per-file basis.
+This package reduces the width of displayed content.  It is similar to olivetti-mode and perfect-margin-mode, but has an enable-by-default and an disable-by-default global minor mode.  It runs as a global mode, but can be enabled/disabled on a per-file basis.
 
 If the total-width of a window is larger than ~temper-width-width~, its margins are modified to make body-width≈temper-width-width.
 
@@ -14,9 +14,9 @@ To force-enable temper-width for a certain buffer, set the variable ~temper-widt
 
 Helper functions ~temper-width-force-enable-locally~ and  ~temper-width-force-disable-locally~ are provided.  Call them with a prefix argument to disable their effect.
 
-To /only/ enable temper-width on specific buffers and nowhere else, enable `temper-width-blind-global-mode', then call `temper-width-force-enable-locally' (or set `temper-width-force-enable' to `t').
+To /only/ enable temper-width on specific buffers and nowhere else, enable ~temper-width-blind-global-mode~, then call ~temper-width-force-enable-locally~ (or set ~temper-width-force-enable~ to ~t~).
 
-`temper-width-global-mode' and `temper-width-blind-global-mode' are mutually exclusive.
+~temper-width-global-mode~ and ~temper-width-blind-global-mode~ are mutually exclusive.
 
 Sample config:
 #+BEGIN_SRC elisp
